@@ -87,6 +87,28 @@
 
   .add-card button:active { background: #c73d2f; }
 
+  /* ===== 分类选择 ===== */
+  .cat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .cat-btn {
+    font-size: 14px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .cat-btn.selected {
+    border-color: #e04a3a;
+    background: #fdeeec;
+  }
+
   /* ===== 保存/导入按钮 ===== */
   .tool-row {
     display: flex;
@@ -181,6 +203,7 @@
   <div class="add-card">
     <input type="number" id="amountInput" placeholder="金额（元）" step="0.01" min="0.01">
     <input type="text" id="noteInput" placeholder="备注，比如：午饭（可不填）" maxlength="50">
+    <div class="cat-row" id="catRow"></div>
     <button id="addBtn">记一笔</button>
   </div>
 
@@ -202,7 +225,53 @@
 // ============ 数据 ============
 // 账目保存在浏览器里（localStorage），关掉浏览器再打开还在
 var STORE_KEY = "jizhang_records";
-var records = [];   // 每一条：{ id, time, note, amount }
+var records = [];   // 每一条：{ id, time, note, amount, cat }
+
+// ============ 分类 ============
+// 所有分类：图案（emoji）+ 名字
+var CATEGORIES = [
+  { id: "chifan",   icon: "🍚", name: "吃饭" },
+  { id: "jiaotong", icon: "🚌", name: "交通" },
+  { id: "gouwu",    icon: "🛒", name: "购物" },
+  { id: "juzhu",    icon: "🏠", name: "居住" },
+  { id: "yule",     icon: "🎮", name: "娱乐" },
+  { id: "yiliao",   icon: "💊", name: "医疗" },
+  { id: "xuexi",    icon: "📚", name: "学习" },
+  { id: "fushi",    icon: "👕", name: "服饰" },
+  { id: "qita",     icon: "📦", name: "其他" }
+];
+
+var selectedCat = "chifan";   // 当前选中的分类（默认"吃饭"）
+
+// 根据编号找到分类，找不到就当"其他"
+function catById(id) {
+  for (var i = 0; i < CATEGORIES.length; i++) {
+    if (CATEGORIES[i].id === id) return CATEGORIES[i];
+  }
+  return CATEGORIES[CATEGORIES.length - 1];
+}
+
+// 把分类按钮画出来
+function buildCatButtons() {
+  var row = document.getElementById("catRow");
+  CATEGORIES.forEach(function (c) {
+    var btn = document.createElement("button");
+    btn.className = "cat-btn";
+    btn.textContent = c.icon + " " + c.name;
+    btn.onclick = function () { selectCat(c.id); };
+    row.appendChild(btn);
+  });
+  selectCat(selectedCat);
+}
+
+// 选中某个分类，按钮变红高亮
+function selectCat(id) {
+  selectedCat = id;
+  var btns = document.getElementById("catRow").querySelectorAll(".cat-btn");
+  CATEGORIES.forEach(function (c, i) {
+    btns[i].className = "cat-btn" + (c.id === id ? " selected" : "");
+  });
+}
 
 // 从浏览器里读取以前存的账目
 function loadData() {
@@ -260,7 +329,7 @@ function render() {
     info.className = "record-info";
     var note = document.createElement("div");
     note.className = "record-note";
-    note.textContent = r.note || "无备注";
+    note.textContent = catById(r.cat).icon + " " + (r.note || "无备注");
     var time = document.createElement("div");
     time.className = "record-time";
     time.textContent = r.time;
@@ -303,7 +372,8 @@ function addRecord() {
     id: Date.now(),                    // 用当前时间当编号，保证不重复
     time: formatTime(new Date()),      // 记录时间
     note: noteInput.value.trim(),      // 备注
-    amount: amount                     // 金额
+    amount: amount,                    // 金额
+    cat: selectedCat                   // 分类
   });
 
   saveData();
@@ -328,9 +398,9 @@ function exportToFile() {
     return;
   }
 
-  // 每行一条：时间|备注|金额
+  // 每行一条：时间|备注|金额|分类
   var lines = records.map(function (r) {
-    return r.time + "|" + (r.note || "无备注") + "|" + r.amount;
+    return r.time + "|" + (r.note || "无备注") + "|" + r.amount + "|" + (r.cat || "qita");
   });
   var text = lines.join("\n");
 
@@ -366,16 +436,17 @@ function handleImportFile(e) {
     lines.forEach(function (line) {
       line = line.trim();
       if (!line) return;
-      // 格式：时间|备注|金额
+      // 格式：时间|备注|金额|分类（旧文件没有分类，只有3段也可以）
       var parts = line.split("|");
-      if (parts.length !== 3) return;
+      if (parts.length !== 3 && parts.length !== 4) return;
       var amount = parseFloat(parts[2]);
       if (!amount || amount <= 0) return;
       newRecords.push({
         id: Date.now() + newRecords.length,   // 重新编号
         time: parts[0],
         note: parts[1],
-        amount: Math.round(amount * 100) / 100
+        amount: Math.round(amount * 100) / 100,
+        cat: parts[3] || "qita"               // 没有分类的旧记录当"其他"
       });
     });
 
@@ -395,6 +466,7 @@ function handleImportFile(e) {
 
 // ============ 启动 ============
 loadData();
+buildCatButtons();
 render();
 
 document.getElementById("addBtn").onclick = addRecord;
