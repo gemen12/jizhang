@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的记账本</title>
+<style>
+  /* ===== 整体样式 ===== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f2f4f7;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .box {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 26px;
+    margin: 8px 0 16px;
+  }
+
+  /* ===== 总支出卡片 ===== */
+  .total-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .total-label {
+    font-size: 15px;
+    color: #888;
+  }
+
+  .total-amount {
+    font-size: 40px;
+    font-weight: bold;
+    color: #e04a3a;
+    margin-top: 6px;
+    word-break: break-all;
+  }
+
+  .total-amount small { font-size: 20px; font-weight: normal; }
+
+  /* ===== 记一笔 ===== */
+  .add-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .add-card input {
+    width: 100%;
+    font-size: 17px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    outline: none;
+  }
+
+  .add-card input:focus { border-color: #e04a3a; }
+
+  .add-card button {
+    width: 100%;
+    font-size: 18px;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: #e04a3a;
+    color: #fff;
+    cursor: pointer;
+  }
+
+  .add-card button:active { background: #c73d2f; }
+
+  /* ===== 保存/导入按钮 ===== */
+  .tool-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .tool-row button {
+    flex: 1;
+    font-size: 15px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .tool-row button:active { background: #f0f0f0; }
+
+  .tip {
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* ===== 记录列表 ===== */
+  .record {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  .record-info { flex: 1; min-width: 0; }
+
+  .record-note {
+    font-size: 16px;
+    word-break: break-all;
+  }
+
+  .record-time {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  .record-amount {
+    font-size: 18px;
+    font-weight: bold;
+    color: #e04a3a;
+    white-space: nowrap;
+  }
+
+  .record-del {
+    font-size: 14px;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #999;
+    cursor: pointer;
+  }
+
+  .record-del:active { background: #f0f0f0; }
+
+  #emptyTip {
+    text-align: center;
+    color: #aaa;
+    margin-top: 40px;
+    font-size: 15px;
+  }
+</style>
+</head>
+<body>
+<div class="box">
+
+  <h1>💰 我的记账本</h1>
+
+  <!-- 总支出 -->
+  <div class="total-card">
+    <div class="total-label">共扣了</div>
+    <div class="total-amount"><span id="totalAmount">0.00</span> <small>元</small></div>
+  </div>
+
+  <!-- 记一笔 -->
+  <div class="add-card">
+    <input type="number" id="amountInput" placeholder="金额（元）" step="0.01" min="0.01">
+    <input type="text" id="noteInput" placeholder="备注，比如：午饭（可不填）" maxlength="50">
+    <button id="addBtn">记一笔</button>
+  </div>
+
+  <!-- 保存到文件 / 从文件导入 -->
+  <div class="tool-row">
+    <button id="exportBtn">💾 保存到文件</button>
+    <button id="importBtn">📂 从文件导入</button>
+  </div>
+  <div class="tip">点"保存到文件"后，把文件存到 E:\记账 文件夹</div>
+  <input type="file" id="fileInput" accept=".txt" hidden>
+
+  <!-- 记录列表 -->
+  <div id="list"></div>
+  <div id="emptyTip">还没有记录，先记一笔吧</div>
+
+</div>
+
+<script>
+// ============ 数据 ============
+// 账目保存在浏览器里（localStorage），关掉浏览器再打开还在
+var STORE_KEY = "jizhang_records";
+var records = [];   // 每一条：{ id, time, note, amount }
+
+// 从浏览器里读取以前存的账目
+function loadData() {
+  try {
+    records = JSON.parse(localStorage.getItem(STORE_KEY)) || [];
+  } catch (e) {
+    records = [];
+  }
+}
+
+// 把账目存进浏览器
+function saveData() {
+  localStorage.setItem(STORE_KEY, JSON.stringify(records));
+}
+
+// ============ 工具函数 ============
+// 把数字变成 "12.50" 这样的格式
+function formatMoney(n) {
+  return Number(n).toFixed(2);
+}
+
+// 把时间变成 "2026-09-19 20:15" 这样的格式
+function formatTime(d) {
+  function pad(x) { return x < 10 ? "0" + x : x; }
+  return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
+       + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
+
+// ============ 显示 ============
+function render() {
+  // 算总和
+  var total = 0;
+  records.forEach(function (r) { total += r.amount; });
+  document.getElementById("totalAmount").textContent = formatMoney(total);
+
+  var list = document.getElementById("list");
+  var emptyTip = document.getElementById("emptyTip");
+  list.innerHTML = "";
+
+  if (records.length === 0) {
+    emptyTip.style.display = "block";
+    return;
+  }
+  emptyTip.style.display = "none";
+
+  // 最新的一条显示在最上面（倒序）
+  var sorted = records.slice().sort(function (a, b) { return b.time.localeCompare(a.time); });
+
+  sorted.forEach(function (r) {
+    var row = document.createElement("div");
+    row.className = "record";
+
+    // 左边：备注 + 时间
+    var info = document.createElement("div");
+    info.className = "record-info";
+    var note = document.createElement("div");
+    note.className = "record-note";
+    note.textContent = r.note || "无备注";
+    var time = document.createElement("div");
+    time.className = "record-time";
+    time.textContent = r.time;
+    info.appendChild(note);
+    info.appendChild(time);
+
+    // 中间：金额
+    var amount = document.createElement("div");
+    amount.className = "record-amount";
+    amount.textContent = "-" + formatMoney(r.amount) + " 元";
+
+    // 右边：删除按钮
+    var delBtn = document.createElement("button");
+    delBtn.className = "record-del";
+    delBtn.textContent = "删";
+    delBtn.onclick = function () { deleteRecord(r.id); };
+
+    row.appendChild(info);
+    row.appendChild(amount);
+    row.appendChild(delBtn);
+    list.appendChild(row);
+  });
+}
+
+// ============ 记一笔 ============
+function addRecord() {
+  var amountInput = document.getElementById("amountInput");
+  var noteInput = document.getElementById("noteInput");
+
+  var amount = parseFloat(amountInput.value);
+  if (!amount || amount <= 0) {
+    alert("请输入正确的金额");
+    amountInput.focus();
+    return;
+  }
+  // 只保留两位小数
+  amount = Math.round(amount * 100) / 100;
+
+  records.push({
+    id: Date.now(),                    // 用当前时间当编号，保证不重复
+    time: formatTime(new Date()),      // 记录时间
+    note: noteInput.value.trim(),      // 备注
+    amount: amount                     // 金额
+  });
+
+  saveData();
+  amountInput.value = "";
+  noteInput.value = "";
+  amountInput.focus();
+  render();
+}
+
+// ============ 删除一条 ============
+function deleteRecord(id) {
+  if (!confirm("确定删掉这条吗？")) return;
+  records = records.filter(function (r) { return r.id !== id; });
+  saveData();
+  render();
+}
+
+// ============ 保存到文件（存到 E 盘） ============
+function exportToFile() {
+  if (records.length === 0) {
+    alert("还没有记录，先记一笔吧");
+    return;
+  }
+
+  // 每行一条：时间|备注|金额
+  var lines = records.map(function (r) {
+    return r.time + "|" + (r.note || "无备注") + "|" + r.amount;
+  });
+  var text = lines.join("\n");
+
+  // 生成一个文件让浏览器下载
+  var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "账本.txt";
+  a.click();
+  URL.revokeObjectURL(blob);
+
+  alert("文件已生成，请把它保存到 E:\\记账 文件夹（浏览器默认存到“下载”文件夹）");
+}
+
+// ============ 从文件导入（恢复账目） ============
+function importFromFile() {
+  document.getElementById("fileInput").click();
+}
+
+function handleImportFile(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  if (!confirm("从文件导入会替换掉现在的全部账目，确定吗？")) {
+    e.target.value = "";
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onload = function () {
+    var lines = reader.result.split("\n");
+    var newRecords = [];
+
+    lines.forEach(function (line) {
+      line = line.trim();
+      if (!line) return;
+      // 格式：时间|备注|金额
+      var parts = line.split("|");
+      if (parts.length !== 3) return;
+      var amount = parseFloat(parts[2]);
+      if (!amount || amount <= 0) return;
+      newRecords.push({
+        id: Date.now() + newRecords.length,   // 重新编号
+        time: parts[0],
+        note: parts[1],
+        amount: Math.round(amount * 100) / 100
+      });
+    });
+
+    if (newRecords.length === 0) {
+      alert("文件里没有找到账目，请确认是之前导出的账本文件");
+      return;
+    }
+
+    records = newRecords;
+    saveData();
+    render();
+    alert("导入成功！共恢复 " + newRecords.length + " 条记录");
+  };
+  reader.readAsText(file, "utf-8");
+  e.target.value = "";
+}
+
+// ============ 启动 ============
+loadData();
+render();
+
+document.getElementById("addBtn").onclick = addRecord;
+document.getElementById("exportBtn").onclick = exportToFile;
+document.getElementById("importBtn").onclick = importFromFile;
+document.getElementById("fileInput").onchange = handleImportFile;
+
+// 在输入框里按回车键也能记一笔
+document.getElementById("amountInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") addRecord();
+});
+document.getElementById("noteInput").addEventListener("keydown", function (e) {
+  if (e.key === "Enter") addRecord();
+});
+</script>
+</body>
+</html>
