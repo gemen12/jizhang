@@ -186,6 +186,97 @@
     margin-top: 40px;
     font-size: 15px;
   }
+
+  /* ===== 贪吃蛇小游戏 ===== */
+  .game-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+
+  .game-overlay.show { display: flex; }
+
+  .game-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    width: 92%;
+    max-width: 440px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    text-align: center;
+  }
+
+  .game-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .game-title { font-size: 18px; font-weight: bold; }
+
+  .game-close {
+    font-size: 14px;
+    padding: 4px 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    color: #999;
+    cursor: pointer;
+  }
+
+  .game-score-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  #snakeCanvas {
+    background: #f7f8fa;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 400px;
+    height: auto;
+    touch-action: none;   /* 手机上在画面上滑动不会滚页面 */
+  }
+
+  .game-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);
+    grid-template-rows: repeat(2, 44px);
+    gap: 6px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .game-pad button {
+    font-size: 18px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .game-pad button:active { background: #f0f0f0; }
+
+  .game-pad .up    { grid-column: 2; grid-row: 1; }
+  .game-pad .left  { grid-column: 1; grid-row: 2; }
+  .game-pad .down  { grid-column: 2; grid-row: 2; }
+  .game-pad .right { grid-column: 3; grid-row: 2; }
+
+  .game-tip {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+  }
 </style>
 </head>
 <body>
@@ -211,6 +302,7 @@
   <div class="tool-row">
     <button id="exportBtn">💾 保存到文件</button>
     <button id="importBtn">📂 从文件导入</button>
+    <button id="snakeBtn">🐍 贪吃蛇</button>
   </div>
   <div class="tip">点"保存到文件"后，把文件存到 E:\记账 文件夹</div>
   <input type="file" id="fileInput" accept=".txt" hidden>
@@ -219,6 +311,28 @@
   <div id="list"></div>
   <div id="emptyTip">还没有记录，先记一笔吧</div>
 
+</div>
+
+<!-- 贪吃蛇小游戏弹窗 -->
+<div class="game-overlay" id="gameOverlay">
+  <div class="game-card">
+    <div class="game-top">
+      <span class="game-title">🐍 贪吃蛇</span>
+      <button class="game-close" id="gameCloseBtn">关闭</button>
+    </div>
+    <div class="game-score-row">
+      <span>分数：<b id="snakeScore">0</b></span>
+      <span>最高：<b id="snakeBest">0</b></span>
+    </div>
+    <canvas id="snakeCanvas" width="400" height="400"></canvas>
+    <div class="game-pad">
+      <button class="up">▲</button>
+      <button class="left">◀</button>
+      <button class="down">▼</button>
+      <button class="right">▶</button>
+    </div>
+    <div class="game-tip">键盘方向键（或 WASD）控制 · 手机上用按钮或滑动屏幕 · 点画面开始</div>
+  </div>
 </div>
 
 <script>
@@ -464,10 +578,259 @@ function handleImportFile(e) {
   e.target.value = "";
 }
 
+// ============ 贪吃蛇小游戏 ============
+// 简易版：吃苹果得分，撞墙或撞到自己就结束，最高分存在浏览器里
+var snake = {
+  cells: 20,                 // 每行 20 格
+  cellSize: 20,              // 每格 20 像素（画布 400x400）
+  body: [],                  // 蛇身：[{x,y}...]，第一个是蛇头
+  dir: { x: 1, y: 0 },       // 当前移动方向
+  food: { x: 0, y: 0 },      // 食物位置
+  score: 0,
+  running: false,            // 是否正在跑
+  timer: null,               // 定时器
+  speed: 150                 // 每步间隔毫秒，越小越快
+};
+
+var SNAKE_BEST_KEY = "snake_best_score";
+var turned = false;          // 这一步已经转过一次方向（防止掉头撞自己）
+
+var snakeCanvas = document.getElementById("snakeCanvas");
+var snakeCtx = snakeCanvas.getContext("2d");
+var gameOverlay = document.getElementById("gameOverlay");
+
+// 摆好一局（不开始跑），打开弹窗时调用
+function snakeInit() {
+  clearInterval(snake.timer);
+  snake.timer = null;
+  snake.running = false;
+  turned = false;
+  snake.body = [
+    { x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }   // 初始 3 节，头在右边
+  ];
+  snake.dir = { x: 1, y: 0 };
+  snake.score = 0;
+  snake.speed = 150;
+  document.getElementById("snakeScore").textContent = "0";
+  snakePlaceFood();
+  snakeDraw();
+  // 画面中间提示怎么开始
+  snakeCtx.fillStyle = "rgba(0,0,0,0.6)";
+  snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+  snakeCtx.fillStyle = "#fff";
+  snakeCtx.font = "bold 20px Microsoft YaHei, sans-serif";
+  snakeCtx.textAlign = "center";
+  snakeCtx.fillText("按方向键或点画面开始", 200, 200);
+}
+
+// 开始跑
+function snakeStart() {
+  snakeInit();
+  snake.running = true;
+  snake.timer = setInterval(snakeTick, snake.speed);
+}
+
+// 每一步：移动蛇、判断吃没吃到、重新画
+function snakeTick() {
+  turned = false;
+
+  // 蛇头往当前方向走一格
+  var head = {
+    x: snake.body[0].x + snake.dir.x,
+    y: snake.body[0].y + snake.dir.y
+  };
+
+  // 撞墙就结束
+  if (head.x < 0 || head.x >= snake.cells || head.y < 0 || head.y >= snake.cells) {
+    return snakeOver();
+  }
+  // 撞到自己就结束（尾巴那节马上要挪走，不算撞）
+  for (var i = 0; i < snake.body.length - 1; i++) {
+    if (head.x === snake.body[i].x && head.y === snake.body[i].y) return snakeOver();
+  }
+
+  snake.body.unshift(head);
+
+  // 吃到食物：变长、加分、加快
+  if (head.x === snake.food.x && head.y === snake.food.y) {
+    snake.score += 10;
+    document.getElementById("snakeScore").textContent = snake.score;
+    snakePlaceFood();
+    if (snake.speed > 60) {
+      snake.speed -= 5;
+      clearInterval(snake.timer);
+      snake.timer = setInterval(snakeTick, snake.speed);
+    }
+  } else {
+    snake.body.pop();   // 没吃到，去掉尾巴
+  }
+
+  snakeDraw();
+}
+
+// 游戏结束
+function snakeOver() {
+  snake.running = false;
+  clearInterval(snake.timer);
+  snake.timer = null;
+
+  // 更新最高分
+  var best = parseInt(localStorage.getItem(SNAKE_BEST_KEY)) || 0;
+  if (snake.score > best) {
+    best = snake.score;
+    localStorage.setItem(SNAKE_BEST_KEY, best);
+  }
+  document.getElementById("snakeBest").textContent = best;
+
+  // 画面中间显示"游戏结束"
+  snakeDraw();
+  snakeCtx.fillStyle = "rgba(0,0,0,0.6)";
+  snakeCtx.fillRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+  snakeCtx.fillStyle = "#fff";
+  snakeCtx.font = "bold 24px Microsoft YaHei, sans-serif";
+  snakeCtx.textAlign = "center";
+  snakeCtx.fillText("游戏结束", 200, 190);
+  snakeCtx.font = "16px Microsoft YaHei, sans-serif";
+  snakeCtx.fillText("得分 " + snake.score + "，点画面重新开始", 200, 230);
+}
+
+// 随机找一个不在蛇身上的格子放食物
+function snakePlaceFood() {
+  while (true) {
+    var x = Math.floor(Math.random() * snake.cells);
+    var y = Math.floor(Math.random() * snake.cells);
+    var onSnake = false;
+    for (var i = 0; i < snake.body.length; i++) {
+      if (snake.body[i].x === x && snake.body[i].y === y) { onSnake = true; break; }
+    }
+    if (!onSnake) {
+      snake.food = { x: x, y: y };
+      return;
+    }
+  }
+}
+
+// 画蛇和食物
+function snakeDraw() {
+  snakeCtx.clearRect(0, 0, snakeCanvas.width, snakeCanvas.height);
+  // 画蛇（头深绿，身子浅绿）
+  for (var i = 0; i < snake.body.length; i++) {
+    var s = snake.body[i];
+    snakeCtx.fillStyle = i === 0 ? "#2e7d32" : "#43a047";
+    snakeCtx.fillRect(s.x * snake.cellSize + 1, s.y * snake.cellSize + 1, snake.cellSize - 2, snake.cellSize - 2);
+  }
+  // 画食物（苹果）
+  snakeCtx.font = "16px sans-serif";
+  snakeCtx.textAlign = "center";
+  snakeCtx.textBaseline = "middle";
+  snakeCtx.fillText("🍎",
+    snake.food.x * snake.cellSize + snake.cellSize / 2,
+    snake.food.y * snake.cellSize + snake.cellSize / 2 + 2);
+}
+
+// 换方向（不能 180 度掉头）
+function snakeTurn(x, y) {
+  if (!snake.running || turned) return;
+  if (x === -snake.dir.x && y === -snake.dir.y) return;   // 反方向不生效
+  snake.dir = { x: x, y: y };
+  turned = true;
+}
+
+// ============ 贪吃蛇：控制方式 ============
+// 键盘方向键（WASD 也可以）
+var KEY_DIRS = {
+  "ArrowUp": { x: 0, y: -1 }, "w": { x: 0, y: -1 }, "W": { x: 0, y: -1 },
+  "ArrowDown": { x: 0, y: 1 }, "s": { x: 0, y: 1 }, "S": { x: 0, y: 1 },
+  "ArrowLeft": { x: -1, y: 0 }, "a": { x: -1, y: 0 }, "A": { x: -1, y: 0 },
+  "ArrowRight": { x: 1, y: 0 }, "d": { x: 1, y: 0 }, "D": { x: 1, y: 0 }
+};
+
+document.addEventListener("keydown", function (e) {
+  var dir = KEY_DIRS[e.key];
+  if (!dir) return;
+  if (!gameOverlay.classList.contains("show")) return;   // 游戏没开着就不管
+  e.preventDefault();                                    // 防止方向键把页面滚走
+  if (!snake.running) snakeStart();
+  else snakeTurn(dir.x, dir.y);
+});
+
+// 屏幕上的方向按钮
+var PAD_DIRS = {
+  up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 }, right: { x: 1, y: 0 }
+};
+
+var padBtns = document.querySelectorAll(".game-pad button");
+for (var i = 0; i < padBtns.length; i++) {
+  (function (btn) {
+    btn.onclick = function () {
+      var dir = PAD_DIRS[btn.className];
+      if (!snake.running) snakeStart();
+      else snakeTurn(dir.x, dir.y);
+    };
+  })(padBtns[i]);
+}
+
+// 鼠标点画面：没在跑就重新开始
+snakeCanvas.addEventListener("click", function () {
+  if (!snake.running) snakeStart();
+});
+
+// 手机在画面上滑动控制（横滑 = 左右，竖滑 = 上下）
+var touchStartPos = null;
+snakeCanvas.addEventListener("touchstart", function (e) {
+  var t = e.touches[0];
+  touchStartPos = { x: t.clientX, y: t.clientY };
+  e.preventDefault();
+});
+snakeCanvas.addEventListener("touchmove", function (e) {
+  e.preventDefault();
+});
+snakeCanvas.addEventListener("touchend", function (e) {
+  if (!touchStartPos) return;
+  var t = e.changedTouches[0];
+  var dx = t.clientX - touchStartPos.x;
+  var dy = t.clientY - touchStartPos.y;
+  touchStartPos = null;
+
+  if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+    // 滑得太短，当点了一下：没在跑就重新开始
+    if (!snake.running) snakeStart();
+    return;
+  }
+  if (!snake.running) { snakeStart(); return; }
+  if (Math.abs(dx) > Math.abs(dy)) snakeTurn(dx > 0 ? 1 : -1, 0);
+  else snakeTurn(0, dy > 0 ? 1 : -1);
+});
+
+// 打开/关闭游戏弹窗
+document.getElementById("snakeBtn").onclick = function () {
+  gameOverlay.classList.add("show");
+  document.body.style.overflow = "hidden";   // 弹窗开着时页面不滚动
+  document.getElementById("snakeBest").textContent = parseInt(localStorage.getItem(SNAKE_BEST_KEY)) || 0;
+  snakeInit();
+};
+
+document.getElementById("gameCloseBtn").onclick = function () {
+  gameOverlay.classList.remove("show");
+  document.body.style.overflow = "";
+  clearInterval(snake.timer);
+  snake.timer = null;
+  snake.running = false;
+};
+
+// 点弹窗外面的黑背景也能关闭
+gameOverlay.addEventListener("click", function (e) {
+  if (e.target === gameOverlay) document.getElementById("gameCloseBtn").onclick();
+});
+
 // ============ 启动 ============
 loadData();
 buildCatButtons();
 render();
+
+// 读出贪吃蛇最高分
+document.getElementById("snakeBest").textContent = parseInt(localStorage.getItem(SNAKE_BEST_KEY)) || 0;
 
 document.getElementById("addBtn").onclick = addRecord;
 document.getElementById("exportBtn").onclick = exportToFile;
