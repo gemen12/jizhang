@@ -1,0 +1,137 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>注册页面</title>
+    <style>
+        body {
+            background-color: #f5f7fa;
+            font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+        }
+        .container {
+            width: 600px;
+            margin: 40px auto;
+            padding: 30px 40px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        table {
+            margin: 0 auto;
+        }
+        th {
+            text-align: right;
+            padding: 10px 12px;
+            vertical-align: top;
+            font-weight: normal;
+            white-space: nowrap;
+        }
+        td {
+            padding: 10px 12px;
+        }
+        input[type="text"],
+        input[type="password"],
+        select,
+        textarea {
+            padding: 6px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        textarea {
+            resize: none;
+        }
+        label {
+            margin-right: 10px;
+        }
+        .buttons {
+            text-align: center;
+            padding-top: 20px;
+        }
+        input[type="submit"],
+        input[type="reset"] {
+            padding: 8px 30px;
+            margin: 0 10px;
+            border: 1px solid #4a90d9;
+            border-radius: 4px;
+            background-color: #4a90d9;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        input[type="reset"] {
+            background-color: #ffffff;
+            color: #4a90d9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>用户注册</h1>
+        <form action="#" method="post">
+            <table>
+                <tr>
+                    <th><label for="name">姓名：</label></th>
+                    <td><input type="text" id="name" name="name" placeholder="请输入姓名"></td>
+                </tr>
+                <tr>
+                    <th><label for="pwd">密码：</label></th>
+                    <td><input type="password" id="pwd" name="password" placeholder="请输入密码"></td>
+                </tr>
+                <tr>
+                    <th>性别：</th>
+                    <td>
+                        <input type="radio" id="male" name="sex" value="男" checked>
+                        <label for="male">男</label>
+                        <input type="radio" id="female" name="sex" value="女">
+                        <label for="female">女</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="province">籍贯：</label></th>
+                    <td>
+                        <select id="province" name="province">
+                            <option>河南省</option>
+                            <option>北京市</option>
+                            <option>上海市</option>
+                            <option>广东省</option>
+                            <option>山东省</option>
+                            <option>江苏省</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="birthday">生日：</label></th>
+                    <td><input type="date" id="birthday" name="birthday"></td>
+                </tr>
+                <tr>
+                    <th>个人爱好：</th>
+                    <td>
+                        <label><input type="checkbox" name="hobby" value="音乐">音乐</label>
+                        <label><input type="checkbox" name="hobby" value="美食">美食</label>
+                        <label><input type="checkbox" name="hobby" value="运动">运动</label>
+                        <label><input type="checkbox" name="hobby" value="旅游">旅游</label>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="intro">自我介绍：</label></th>
+                    <td>
+                        <textarea id="intro" name="intro" rows="5" cols="40" placeholder="请简单介绍一下自己"></textarea>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="buttons">
+                        <input type="reset" value="重置">
+                        <input type="submit" value="提交">
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+</html>
+```

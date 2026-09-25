@@ -1,0 +1,78 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>CSS太极图</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: #2b6cb0;
+            position: relative;
+        }
+
+        .taiji {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin-left: -150px;
+            margin-top: -150px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: linear-gradient(to right, #ffffff 50%, #000000 50%);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .top {
+            position: absolute;
+            top: 0;
+            left: 75px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: #ffffff;
+        }
+
+        .bottom {
+            position: absolute;
+            bottom: 0;
+            left: 75px;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background-color: #000000;
+        }
+
+        .dot-black {
+            position: absolute;
+            top: 55px;
+            left: 130px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #000000;
+        }
+
+        .dot-white {
+            position: absolute;
+            bottom: 55px;
+            left: 130px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="taiji">
+        <div class="top"></div>
+        <div class="bottom"></div>
+        <div class="dot-black"></div>
+        <div class="dot-white"></div>
+    </div>
+</body>
+</html>
+```

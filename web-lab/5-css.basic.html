@@ -1,0 +1,46 @@
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>CSS基础实验——选择器和文字背景</title>
+    <style>
+        /* 元素选择器：选中 div，让里面的内容红色、水平居中 */
+        div {
+            color: red;
+            text-align: center;
+        }
+
+        /* 河南大学介绍文字 */
+        .intro {
+            width: 700px;
+            margin: 40px auto;
+            padding: 25px 30px;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.35);
+            text-indent: 2em;
+            line-height: 2;
+            letter-spacing: 2px;
+            background-color: #fdf6e3;
+            border: 1px solid #d8cba8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h1>元素选择器</h1>
+        <p>全部不放弃</p>
+    </div>
+
+    <p class="intro">
+        河南大学坐落在八朝古都开封，是一所拥有百年办学历史的高等学府。
+        学校始建于1912年，历经河南留学欧美预备学校、中州大学、国立河南大学等阶段，
+        积淀了深厚的文化底蕴。如今的河南大学已发展成为涵盖文、史、哲、经、管、法、
+        理、工、医、农等多学科的综合性大学，并入选国家"双一流"建设高校名单。
+        明伦校区的大礼堂、贡院碑亭与铁塔湖相映成趣，古朴的建筑群默默讲述着
+        这所百年老校的沧桑与荣光。
+    </p>
+</body>
+</html>
+```

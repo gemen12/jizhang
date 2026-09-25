@@ -1,0 +1,225 @@
+4 张图都能访问，就用它们当新闻缩略图。完整代码：
+
+```html
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的综合网页</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f5f5f5;
+            font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
+        }
+
+        /* ========== 顶部导航栏（淘宝风） ========== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #ff5000;
+            padding: 14px 60px;
+        }
+        .logo {
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .search {
+            display: flex;
+        }
+        .search input {
+            width: 300px;
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px 0 0 4px;
+            outline: none;
+            font-size: 14px;
+        }
+        .search button {
+            padding: 8px 24px;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            background-color: #ffffff;
+            color: #ff5000;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .search button:hover {
+            background-color: #ffe8dc;
+        }
+
+        /* ========== 中间两栏 ========== */
+        .main {
+            display: flex;
+            gap: 20px;
+            width: 1000px;
+            margin: 30px auto;
+        }
+        .news {
+            flex: 2;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .aside {
+            flex: 1;
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .section-title {
+            font-size: 18px;
+            border-left: 4px solid #ff5000;
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+        .news-item {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px dashed #e5e5e5;
+        }
+        .news-item:last-child {
+            border-bottom: none;
+        }
+        .news-item img {
+            width: 140px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        .news-text {
+            margin-left: 15px;
+        }
+        .news-text h3 {
+            font-size: 15px;
+            color: #333333;
+            line-height: 1.5;
+        }
+        .news-text h3:hover {
+            color: #ff5000;
+            cursor: pointer;
+        }
+        .news-text p {
+            font-size: 13px;
+            color: #999999;
+            margin-top: 8px;
+            line-height: 1.6;
+        }
+        .aside p {
+            font-size: 14px;
+            color: #555555;
+            line-height: 2;
+            text-indent: 2em;
+            margin-bottom: 12px;
+        }
+
+        /* ========== 底部诗词卡片 ========== */
+        .poem-card {
+            width: 620px;
+            margin: 40px auto 60px;
+            padding: 40px 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #eaf6ff, #cfe9fb);
+            border: 1px solid #bcdcf5;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+        .poem-card h2 {
+            font-family: "楷体", "KaiTi", serif;
+            font-size: 24px;
+            color: #2c5f8a;
+            margin-bottom: 6px;
+        }
+        .author {
+            font-size: 13px;
+            color: #6b8caa;
+            margin-bottom: 20px;
+        }
+        .poem {
+            font-family: "楷体", "KaiTi", serif;
+            font-size: 18px;
+            line-height: 2.2;
+            color: #3a4a5a;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="logo">淘宝网</div>
+        <div class="search">
+            <input type="text" placeholder="请输入要搜索的内容">
+            <button>搜索</button>
+        </div>
+    </header>
+
+    <!-- 中间两栏 -->
+    <div class="main">
+        <!-- 左栏：新闻列表 -->
+        <div class="news">
+            <h2 class="section-title">新闻列表</h2>
+            <div class="news-item">
+                <img src="https://www.henu.edu.cn/__local/7/46/23/000665BC4E5D554A068C88DCBD8_488943DA_8B86F.jpg" alt="新闻图片">
+                <div class="news-text">
+                    <h3>我校师生在省大学生科技竞赛中荣获佳绩</h3>
+                    <p>近日，河南省大学生科技竞赛落下帷幕，我校代表队表现出色，共获得一等奖两项、二等奖五项。</p>
+                </div>
+            </div>
+            <div class="news-item">
+                <img src="https://www.henu.edu.cn/__local/7/DE/96/AF778FBAA4EFF2B809DA1DBDF44_4CAE440A_2D087.jpg" alt="新闻图片">
+                <div class="news-text">
+                    <h3>图书馆举办秋季读书月系列活动</h3>
+                    <p>为营造浓厚的校园阅读氛围，图书馆近日启动秋季读书月活动，陆续开展读书分享会、名家讲座等活动。</p>
+                </div>
+            </div>
+            <div class="news-item">
+                <img src="https://www.henu.edu.cn/__local/8/32/44/AEDE9551400890AD38B6EA8DDA5_5CBC7F97_8F210.jpg" alt="新闻图片">
+                <div class="news-text">
+                    <h3>校园歌手大赛总决赛圆满落幕</h3>
+                    <p>经过近一个月的激烈角逐，校园歌手大赛总决赛于昨晚落下帷幕，现场气氛热烈，掌声不断。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右栏：文字 -->
+        <div class="aside">
+            <h2 class="section-title">关于本站</h2>
+            <p>
+                欢迎来到我的综合网页！这是本次网页设计课程的综合大作业，
+                页面包含顶部导航栏、新闻列表、文字介绍和诗词卡片等模块。
+            </p>
+            <p>
+                学习网页设计的过程充满乐趣，从简单的文字排版到复杂的页面布局，
+                每一次动手实践都能带来新的收获。希望通过不断的练习，
+                我能做出更加精美的网页作品。
+            </p>
+        </div>
+    </div>
+
+    <!-- 底部诗词卡片 -->
+    <div class="poem-card">
+        <h2>水调歌头·明月几时有</h2>
+        <p class="author">苏轼</p>
+        <p class="poem">
+            明月几时有？把酒问青天。<br>
+            不知天上宫阙，今夕是何年。<br>
+            我欲乘风归去，又恐琼楼玉宇，高处不胜寒。<br>
+            起舞弄清影，何似在人间。<br>
+            转朱阁，低绮户，照无眠。<br>
+            不应有恨，何事长向别时圆？<br>
+            人有悲欢离合，月有阴晴圆缺，此事古难全。<br>
+            但愿人长久，千里共婵娟。
+        </p>
+    </div>
+</body>
+</html>
+```
